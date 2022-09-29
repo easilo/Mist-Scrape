@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "mist-automation-test-project",
+  "private_key_id": "2ac38d2c03b9999c77836a5bb3d7bbb5647bc45d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC4MLPj4NezjtFV\n2wMQffnEDoMXNFaNv06+mLBZDzB6o2kLqOpBKfVQQrxd8E7gWmfYeVNXcnfmEWSo\nTtx6a4gDBfWveZKnhr7rGtNbwEXTP7lRVPn5JpbhyGmIgxWiNRquUvdouePMFJdY\nja5QfY4M2t+gKYzQP0/1VhHgZFz/U8fJseJOaMgrb5DVMV6uKea84CHRE0qadWcU\nhoPZEZk9CetrnE6IqWpaGj56gmTSDFbp6ijtRDWYbCRn8YiFdNKgc4gp4VyBQu9f\nLBcPiFTXLZvc1K6kod1EXS0MrkcTNZNEo5I85nNUD6X9Xv28FMnUilbtW2rN9350\nkuQ9f37rAgMBAAECggEAWTuPCwk0ttKr69Isy+KcDDWToLxEamuSNJg4Zw0KyX89\nNt7gji1LoVSTeVcgf2SNBrzQeX8FQzqN71Q1UEGkJQLQIfDd8bc/6xqV5s9hhJRM\nrXBjoibl1gCH0BDhfDIJ+QZMwjm8eHRJViddmbUaCnRG/orio0jo7cyC4Jj+zNrw\nMyFKYcOkQP8rD5RJl6xIm77Dh65VGmg58JD1PfEuL7/L3wtJ5wVHqyKXP0gd2LG0\nHI4T+0+vA7xNNSB8Zm3HxBaRMdyyQeJgfOpgC7AYeFV/GRAtLRZjTPUzAV/x3mnY\nKNa8il1ihgaHaKvA7BPzkXQnIq6TEHyYOXqF0tqXgQKBgQDydYp+0VAcgvo+asFz\nI2EnUUhAN0Qy/qDv0+zwFQW/XYguQ1vhtkn5n448hH8b2+m+RsDyxEaadrtyBy5G\nPKVTk7Cx5P0nK6QhmVmrSz8aTSo0s5L3gDGCVbDqPeo810TU4QUqk/ydZB4A4cPl\n7trMVdbxP00EdpxIu9hdcA9kIQKBgQDCehYW4bjqD3nJ0pmlCiXwAfT/n7IwKaGR\nxfA9Y0VW02mV0bXUq61Sw2Xh+/PLgsojgyIcnxmdO4/TDcfoMoHAWFMjWQy/g2m6\n7Vsc+YRMAAYFHFRa6FtjZ1sRIpCaq/QshitmP3t6ebdB3/6smPSFt0XhgS4SwG+a\nfgYlncABiwKBgQCEDIoySXNVI+yAhAn52EH4dOdhuffVwiIKnCRGGVz4/UrGz37C\nLlKZtlF0GkFT/fCO5d/+F/HP/GxYTRrhu/Pa0ewA5xMM+1K3zdotVZz3iSE8dLTN\nQS81qc/hs3jYS/G78xWqO9DwM2+30T2tA+p8MSAQYgZjMOorHstXEEoBoQKBgBJJ\nztf6BBymteo/zskRaj3mwTZkuyoCUDpYJd5v/m5K1UwMe4/zUQpOa79TpTqHIyEx\nzLxqTctWdZEAY8M3NLJ02+SgFC3SWtgESCQyZrmK6wYCAwDFhwqTBqJW4Mha0Ux6\nlYw4/hCnb49XVCjA/YWxlXW+YynKRPR/U26oJg0/AoGBAOEBNgIFQdsaWybPvIp6\nKqRdoq4xNjkLzLhZ/B6xdOyqr96ZqDnbds0PYv0o5y7SM/lqD5/HshhNHp78VXM1\nXziMyIdl4OwWqKbMyYra/zvSBaa018C++Atm61Q4TZTl4Ixmp8pf2xkj0Undi44q\nHdPw4d94gOvXbIpxUnpapram\n-----END PRIVATE KEY-----\n",
+  "client_email": "service-account@mist-automation-test-project.iam.gserviceaccount.com",
+  "client_id": "107767623492205802460",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/service-account%40mist-automation-test-project.iam.gserviceaccount.com"
+}
