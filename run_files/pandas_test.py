@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import re
 
 sle_data = pd.read_csv(
     "C:\\Users\\erin.asilo\\Documents\\Erin Automation\\Mist Scrape\\SLE List.csv"
@@ -14,12 +15,16 @@ sle_data["Site"] = sle_data["Site"].astype("string")
 sle_data["Successful Connect"] = sle_data["Successful Connect"].astype("string")
 for index, row in sle_data.iterrows():
     if len(row["Site"]) <= 3:
-        sites.append(row["Site"])
-        values.append(row["Successful Connect"])
+        sites.append([row["Site"]])
+        values.append(re.findall("\d+", row["Successful Connect"]))
         # data[row["Site"]] = row["Successful Connect"]
 
 print(sites)
 print(values)
+
+
+# for value in values:
+#    print(re.findall("\d+", value))
 # print(len(row["Site"]))
 
 # if len(row["Site"])
