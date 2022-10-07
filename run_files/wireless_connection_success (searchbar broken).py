@@ -17,13 +17,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import StaleElementReferenceException
 import chromedriver_autoinstaller
 import time
 import os
 from dotenv import load_dotenv
-import csv
-from io import TextIOWrapper
-from zipfile import ZipFile
 from Google import Create_Service
 from datetime import date
 from datetime import datetime
@@ -141,22 +139,27 @@ def scrape():
         )
         login.click()
         time.sleep(2)
-        wait.until(EC.element_to_be_clickable((By.ID, "NavBar-Analytics")))
-        print("    Grabbing metrics ...\n")
-        time.sleep(4)
-        analytics = driver.find_element(By.ID, "NavBar-Analytics")
-        hover = action.move_to_element(analytics)
-        hover.perform()
-        time.sleep(1)
-        network_analytics = driver.find_element(
-            By.XPATH, '//*[@id="app-body"]/div/div[1]/ul/li[7]/div[2]/div/div[2]/div'
-        )
-        action.move_to_element(network_analytics).click().perform()
-        dropdown = wait.until(
+        wait.until(
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
-                    '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[1]/span[2]/div/div[2]',
+                    '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[2]/div/div/span/span/button[1]',
+                )
+            )
+        )
+        print("    Grabbing metrics ...\n")
+        time.sleep(4)
+        analytics = driver.find_element(
+            By.XPATH,
+            '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[2]/div/div/span/span/button[1]',
+        )
+        analytics.click()
+        time.sleep(3)
+        dropdown = wait.until(
+            EC.element_to_be_clickable(
+                (
+                    By.CLASS_NAME,
+                    "timeRangeSelector",
                 )
             )
         )
@@ -165,42 +168,65 @@ def scrape():
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
-                    '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[1]/span[2]/div/div[2]/div/div/div/div/div[2]/div[1]',
+                    '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[2]/div/div[2]/div/div/div/div/div[1]/div[3]',
                 )
             )
         )
         timeframe.click()
-        time.sleep(2)
-        download = wait.until(
+        time.sleep(5)
+        dropdown = wait.until(
             EC.element_to_be_clickable(
                 (
-                    By.XPATH,
-                    '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[1]/span[2]/div/div[3]/div[2]/button',
+                    By.CLASS_NAME,
+                    "scopeSelector",
                 )
             )
         )
-        try:
-            os.remove(ZIP_PATH)
-        except:
-            pass
-        time.sleep(2)
-        download.click()
-        # Wait until the file exists
-        while not os.path.exists(ZIP_PATH):
+        dropdown.click()
+        site_finder = driver.find_element(By.CLASS_NAME, "entityScroll")
+        sites_elements = site_finder.find_elements(By.TAG_NAME, "li")
+        sites = []
+        values = []
+        for items in sites_elements:
+            if len(items.text) <= 3:
+                sites.append(items.text)
+        """
+        site_finder = driver.find_element(
+            By.CLASS_NAME,
+            "/html/body/div[1]/div/div[2]/div[2]/div[1]/div[2]/div/div[1]/div/div/div[2]/div/div[1]/input",
+        )
+        
+        connect_element = driver.find_element(
+            By.XPATH,
+            "//*[contains(text(), 'Successful Connects')]/../following-sibling::div[1]/p",
+        )"""
+        for site in sites:
+            dropdown.click()
+            time.sleep(2)
+            staleElement = True
+            while staleElement:
+                try:
+                    site_finder = driver.find_element(
+                        By.XPATH,
+                        "/html/body/div[1]/div/div[2]/div[2]/div[1]/div[2]/div/div[1]/div/div/div[2]/div/div[1]/input",
+                    )
+                    staleElement = True
+                except StaleElementReferenceException as e:
+                    staleElement = False
+            time.sleep(2)
+            site_finder.send_keys(site)
             time.sleep(1)
-        # Open .zip then convert .csv file to list
-        with ZipFile(ZIP_PATH) as zf:
-            with zf.open("Sites by Clients.csv", "r") as infile:
-                reader = csv.reader(TextIOWrapper(infile, "utf-8"))
-                data = list(reader)
-        try:
-            # Delete zip file after
-            os.remove(ZIP_PATH)
-        except:
-            pass
-        finally:
-            driver.quit()
-            return data
+            site_finder.submit()
+            time.sleep(3)
+            connect_element = driver.find_element(
+                By.XPATH,
+                "//*[contains(text(), 'Successful Connects')]/../following-sibling::div[1]/p",
+            )
+            values.append(connect_element.text)
+            print("Site: " + site + "Successful Connects: " + connect_element.text())
+
+        # print("Site: " + "Successful Connects: " + connect_element.text)
+
     except Exception as e:
         print(e)
         driver.quit()
@@ -295,7 +321,8 @@ def main():
     os.system(sys_cls_clear)
     try:
         print("Today is " + day + " " + today + "\n")
-        parse_and_upload(scrape())
+        scrape()
+        # parse_and_upload(scrape())
         print("Done!\n")
     # Retry program if it fails
     except Exception as e:
