@@ -24,7 +24,6 @@ from dotenv import load_dotenv
 import csv
 from io import TextIOWrapper
 from zipfile import ZipFile
-from Google import Create_Service
 from datetime import date
 from datetime import datetime
 import sys
@@ -32,6 +31,8 @@ import gspread
 import pandas as pd
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+import re
+
 # --------------------------------------------------------------------------
 # Load .env file
 # --------------------------------------------------------------------------
@@ -56,7 +57,9 @@ CLIENT_SECRET_FILE = SERVICE_ACCOUNT
 API_NAME = "sheets"
 API_VERSION = "v4"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT, scopes=SCOPES)
+creds = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT, scopes=SCOPES
+)
 
 service = build(API_NAME, API_VERSION, credentials=creds)
 spreadsheet_id = SPREADSHEET_ID
@@ -110,6 +113,8 @@ day = date.today().strftime("%A")
 
 def scrape():
     try:
+        # vvv Test variable for weekly sheet
+        # day = "Friday"
         # Log into Mist
         print("Executing Mist Scrape ... ")
         print("    Logging into Mist ... ")
@@ -154,6 +159,27 @@ def scrape():
             By.XPATH, '//*[@id="app-body"]/div/div[1]/ul/li[7]/div[2]/div/div[2]/div'
         )
         action.move_to_element(network_analytics).click().perform()
+        time.sleep(2)
+        sle_page = wait.until(
+            EC.element_to_be_clickable(
+                (
+                    By.XPATH,
+                    '//*[@id="app-body"]/div/div[2]/div[2]/header/span[1]/div[1]',
+                )
+            )
+        )
+        sle_page.click()
+        time.sleep(1)
+        sle_page = wait.until(
+            EC.element_to_be_clickable(
+                (
+                    By.XPATH,
+                    '//*[@title="SLE"]',
+                )
+            )
+        )
+        sle_page.click()
+        time.sleep(1)
         dropdown = wait.until(
             EC.element_to_be_clickable(
                 (
@@ -194,15 +220,58 @@ def scrape():
         with ZipFile(ZIP_PATH) as zf:
             with zf.open("Sites by Clients.csv", "r") as infile:
                 reader = csv.reader(TextIOWrapper(infile, "utf-8"))
-                data = list(reader)
+                client_data = list(reader)
         try:
             # Delete zip file after
             os.remove(ZIP_PATH)
         except:
             pass
-        finally:
+        if day == "Friday":
+            dropdown.click()
+            time.sleep(1)
+            timeframe = wait.until(
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[1]/span[2]/div/div[2]/div/div/div/div/div[1]/div[3]',
+                    )
+                )
+            )
+            time.sleep(1)
+            timeframe.click()
+            time.sleep(2)
+            try:
+                os.remove(ZIP_PATH)
+            except:
+                pass
+            download.click()
+            while not os.path.exists(ZIP_PATH):
+                time.sleep(1)
+            with ZipFile(ZIP_PATH) as zf:
+                with zf.open("SLE List.csv", "r") as infile:
+                    reader = pd.read_csv(infile)
+                    reader = reader.reset_index()
+                    sites = []
+                    values = []
+                    reader["Site"] = reader["Site"].astype("string")
+                    reader["Successful Connect"] = reader["Successful Connect"].astype(
+                        "string"
+                    )
+                    for index, row in reader.iterrows():
+                        if len(row["Site"]) <= 3:
+                            sites.append([row["Site"]])
+                            values.append(re.findall("\d+", row["Successful Connect"]))
+                    sle_data = [sites, values]
+            try:
+                os.remove(ZIP_PATH)
+            except:
+                pass
+            finally:
+                driver.quit()
+                return [client_data, sle_data]
+        else:
             driver.quit()
-            return data
+            return [client_data]
     except Exception as e:
         print(e)
         driver.quit()
@@ -231,9 +300,9 @@ def parse_and_upload(data):
     del columns_array[:2]
     # Prepare first 2 columns as the date and day
     values = [[today], [day]]
-    for i in range(len(data)):
-        sites = data[i][0]
-        clients = data[i][1]
+    for i in range(len(data[0])):
+        sites = data[0][i][0]
+        clients = data[0][i][1]
         site_array = [sites]
         # First line of data file is "sites" so skip this
         if sites == "Sites":
@@ -259,7 +328,7 @@ def parse_and_upload(data):
     values.extend(columns_array)
 
     print("\nUpdating Google sheet ...\n")
-    worksheet_name = "Data!"
+    worksheet_name = "DailyClientCount!"
     cell_range_insert = "A2"
 
     value_range_body = {"majorDimension": "COLUMNS", "values": values}
@@ -283,26 +352,97 @@ def parse_and_upload(data):
         body=value_range_body,
     ).execute()
 
+    if len(data) > 1:
+        columns = spreadsheet.get_worksheet(2).row_values(1)
+        columns_array = []
+        title_array = []
+        new_column = False
+        for el in columns:
+            title_array.append(el.split(", "))
+            columns_array.append(el.split(", "))
+        del columns_array[:2]
+        next_row = next_available_row(spreadsheet.get_worksheet(2))
+        values = [
+            [today],
+            ["=average(C%s:J%s)" % (next_row, next_row)],
+        ]
+        for i in range(len(data[1][0])):
+            sites = data[1][0][i]
+            connects = data[1][1][i][0]
+            # Check if the site from the data file is already in spreadsheet, if it is then match the data with the site
+            if sites in columns_array:
+                columns_array[columns_array.index(sites)][0] = connects
+            # If site does not match any column in spreadsheet then add a new column
+            else:
+                title_array.append([sites])
+                columns_array.extend([[connects]])
+                new_column = True
+            if sites != "Sites":
+                print("Site: " + sites[0] + " | Successful Connects: " + connects + "%")
+
+        # Check if value is a string then erase it (for example if a site has 0 clients it will not show up in the list)
+        for list in columns_array:
+            for idx in range(len(list)):
+                if list[idx] == today or list[idx] == day:
+                    continue
+                elif list[idx][0].isalpha():
+                    list[idx] = " "
+        values.extend(columns_array)
+
+        print("\nUpdating Google sheet ...\n")
+        worksheet_name = "WeeklySuccessfulConnects!"
+        cell_range_insert = "A3"
+
+        value_range_body = {"majorDimension": "COLUMNS", "values": values}
+
+        value_range_body1 = {"majorDimension": "COLUMNS", "values": title_array}
+
+        # Update the column titles
+        if new_column == True:
+            service.spreadsheets().values().update(
+                spreadsheetId=spreadsheet_id,
+                valueInputOption="USER_ENTERED",
+                range=worksheet_name + "A1",
+                body=value_range_body1,
+            ).execute()
+
+        # Update the values on spreadsheet
+        service.spreadsheets().values().append(
+            spreadsheetId=spreadsheet_id,
+            valueInputOption="USER_ENTERED",
+            range=worksheet_name + cell_range_insert,
+            body=value_range_body,
+        ).execute()
+
+
+def next_available_row(worksheet):
+    str_list = list(filter(None, worksheet.col_values(1)))
+    return str(len(str_list) + 2)
+
+
 def bye():
     try:
         sys.exit(1)
     except:
         os._exit(1)
 
+
 def retry():
     sys.stdout.flush()
-    os.execv(
-        sys.executable, [sys.executable, '"' + sys.argv[0] + '"'] + sys.argv[1:]
-    )
+    os.execv(sys.executable, [sys.executable, '"' + sys.argv[0] + '"'] + sys.argv[1:])
+
 
 # --------------------------------------------------------------------------
 # Function:     main()
 # Purpose:      Run the previous functions and catches errors
 # --------------------------------------------------------------------------
 
+
 def main():
-    #os.system(sys_cls_clear)
-    if day == 'Saturday' or day == 'Sunday':
+    os.system(sys_cls_clear)
+    # Don't run on weekends???
+    if day == "Saturday" or day == "Sunday":
+        driver.quit
         bye()
     else:
         try:
