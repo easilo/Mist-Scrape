@@ -303,6 +303,7 @@ def retry():
 def main():
     #os.system(sys_cls_clear)
     if day == 'Saturday' or day == 'Sunday':
+        driver.quit()
         bye()
     else:
         try:
