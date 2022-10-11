@@ -439,10 +439,8 @@ def retry():
 
 
 def main():
-    os.system(sys_cls_clear)
-    # Don't run on weekends???
-    if day == "Saturday" or day == "Sunday":
-        driver.quit
+    if day == 'Saturday' or day == 'Sunday':
+        driver.quit()
         bye()
     else:
         try:
