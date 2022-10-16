@@ -1,4 +1,4 @@
-# Mist Scrape
+# Mist-Scrape
 **Author:** Erin Asilo \
 **Title:** Infrastructure Network Intern \
 **Organization:** RingCentral \
