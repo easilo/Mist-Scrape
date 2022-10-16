@@ -41,7 +41,6 @@ import string
 load_dotenv()
 EMAIL = os.environ.get("EMAIL")
 PASSWORD = os.environ.get("PASSWORD")
-
 DOWNLOAD_PATH = os.environ.get("DOWNLOAD_PATH")
 ZIP_PATH = os.environ.get("ZIP_PATH")
 SERVICE_ACCOUNT = os.environ.get("SERVICE_ACCOUNT")
@@ -66,7 +65,8 @@ service = build(API_NAME, API_VERSION, credentials=creds)
 spreadsheet_id = SPREADSHEET_ID
 mySpreadsheets = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
 
-# Worksheet names on Google Sheets
+# Target worksheet names on Google Sheet
+# vvv change if in testing or production
 # daily_client_count_sheet = "TESTDailyClientCount"
 daily_client_count_sheet = "DailyClientCount"
 # weekly_successful_connects_sheet = "TESTWeeklySuccessfulConnects"
