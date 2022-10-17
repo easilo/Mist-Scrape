@@ -120,7 +120,7 @@ day = date.today().strftime("%A")
 def scrape():
     try:
         # vvv Test variable for weekly sheet
-        # day = "Monday"
+        # day = "Friday"
 
         # Log into Mist
         print("Executing Mist Scrape ... ")
@@ -373,7 +373,7 @@ def parse_and_upload(client_data, sle_data):
         # Set first 2 columns as date and average of row values
         values = [
             [today],
-            ["=average(C%s:%s%s)" % (next_row, n2a(len(sle_data[0]) + 3), next_row)],
+            ["=average(C%s:%s%s)" % (next_row, n2a(len(columns) - 1), next_row)],
         ]
         for i in range(len(sle_data[0])):
             sites = sle_data[0][i]
