@@ -121,6 +121,7 @@ def scrape():
     try:
         # vvv Test variable for weekly sheet
         # day = "Monday"
+
         # Log into Mist
         print("Executing Mist Scrape ... ")
         print("    Logging into Mist ... ")
@@ -176,6 +177,7 @@ def scrape():
         )
         sle_page.click()
         time.sleep(1)
+        # vvv change this XPATH if the title of the analytics page is different from 'SLE'
         sle_page = wait.until(
             EC.element_to_be_clickable(
                 (
