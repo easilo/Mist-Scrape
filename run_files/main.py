@@ -224,7 +224,7 @@ def scrape():
             time.sleep(1)
         # Open .zip then convert .csv file to list
         with ZipFile(ZIP_PATH) as zf:
-            with zf.open("Sites by Clients.csv", "r") as infile:
+            with zf.open("Sites by clients.csv", "r") as infile:
                 reader = csv.reader(TextIOWrapper(infile, "utf-8"))
                 client_data = list(reader)
         try:
