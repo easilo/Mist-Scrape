@@ -206,7 +206,16 @@ def scrape():
             )
         )
         timeframe.click()
-        time.sleep(2)
+        time.sleep(5)
+        wait.until(
+            EC.text_to_be_present_in_element(
+                (
+                    By.XPATH,
+                    '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[1]/span[2]/div/div[2]/span[1]/span',
+                ),
+                "Today",
+            )
+        )
         download = wait.until(
             EC.element_to_be_clickable(
                 (
@@ -234,7 +243,9 @@ def scrape():
             os.remove(ZIP_PATH)
         except:
             pass
+
         if day == "Friday":
+            time.sleep(5)
             dropdown.click()
             time.sleep(1)
             timeframe = wait.until(
@@ -247,7 +258,16 @@ def scrape():
             )
             time.sleep(1)
             timeframe.click()
-            time.sleep(2)
+            time.sleep(5)
+            wait.until(
+                EC.text_to_be_present_in_element(
+                    (
+                        By.XPATH,
+                        '//*[@id="app-body"]/div/div[2]/div[2]/div[1]/div[1]/span[2]/div/div[2]/span[1]/span',
+                    ),
+                    "Last 7 Days",
+                )
+            )
             try:
                 os.remove(ZIP_PATH)
             except:
@@ -276,6 +296,7 @@ def scrape():
                 pass
             finally:
                 driver.quit()
+                print(client_data)
                 return (client_data, sle_data)
         else:
             driver.quit()
