@@ -33,6 +33,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import re
 import string
+import copy
 
 # --------------------------------------------------------------------------
 # Load .env file
@@ -70,7 +71,9 @@ mySpreadsheets = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execut
 # daily_client_count_sheet = "TESTDailyClientCount"
 daily_client_count_sheet = "DailyClientCount"
 # weekly_successful_connects_sheet = "TESTWeeklySuccessfulConnects"
-weekly_successful_connects_sheet = "WeeklySuccessfulConnects"
+weekly_successful_connects_sheet = "Successful_Connects"
+ap_health_sheet = "WAP_Uptime"
+capacity_sheet = "WiFi_Radio_Capacity"
 
 # --------------------------------------------------------------------------
 # Selenium chromedriver options
@@ -197,6 +200,7 @@ def scrape():
             )
         )
         dropdown.click()
+        time.sleep(1.5)
         timeframe = wait.until(
             EC.element_to_be_clickable(
                 (
@@ -285,10 +289,18 @@ def scrape():
                     reader["Successful Connect"] = reader["Successful Connect"].astype(
                         "string"
                     )
+                    reader["AP Health"] = reader["AP Health"].astype("string")
+                    reader["Capacity"] = reader["Capacity"].astype("string")
                     for index, row in reader.iterrows():
                         if len(row["Site"]) <= 3:
                             sites.append(row["Site"])
-                            values.append(re.findall("\d+", row["Successful Connect"]))
+                            values.append(
+                                [
+                                    re.findall("\d+", row["Successful Connect"]),
+                                    re.findall("\d+", row["AP Health"]),
+                                    re.findall("\d+", row["Capacity"]),
+                                ]
+                            )
                     sle_data = [sites, values]
             try:
                 os.remove(ZIP_PATH)
@@ -388,21 +400,47 @@ def parse_and_upload(client_data, sle_data):
             columns_array.append(el.split(", "))
         del columns_array[:2]
         # Get next row number, used for setting sheets average formula
-        next_row = next_available_row(
+        connect_next_row = next_available_row(
             spreadsheet.worksheet(weekly_successful_connects_sheet)
         )
+        health_next_row = next_available_row(spreadsheet.worksheet(ap_health_sheet))
+        capacity_next_row = next_available_row(spreadsheet.worksheet(capacity_sheet))
         # Set first 2 columns as date and average of row values
-        values = [
+        connect_values = [
             [today],
-            ["=average(C%s:%s%s)" % (next_row, n2a(len(columns) - 1), next_row)],
+            [
+                "=average(C%s:%s%s)"
+                % (connect_next_row, n2a(len(columns) - 1), connect_next_row)
+            ],
         ]
+        health_values = [
+            [today],
+            [
+                "=average(C%s:%s%s)"
+                % (health_next_row, n2a(len(columns) - 1), health_next_row)
+            ],
+        ]
+        capacity_values = [
+            [today],
+            [
+                "=average(C%s:%s%s)"
+                % (capacity_next_row, n2a(len(columns) - 1), capacity_next_row)
+            ],
+        ]
+        connect_array = copy.deepcopy(columns_array)
+        health_array = copy.deepcopy(columns_array)
+        capacity_array = copy.deepcopy(columns_array)
         for i in range(len(sle_data[0])):
             sites = sle_data[0][i]
             connects = sle_data[1][i][0]
+            health = sle_data[1][i][1]
+            capacity = sle_data[1][i][2]
             site_array = [sites]
             # Check if the site from the data file is already in spreadsheet, if it is then match the data with the site
             if site_array in columns_array:
-                columns_array[columns_array.index(site_array)][0] = connects
+                connect_array[connect_array.index(site_array)] = connects
+                health_array[health_array.index(site_array)] = health
+                capacity_array[capacity_array.index(site_array)] = capacity
             # If site does not match any column in spreadsheet then add a new column
             else:
                 title_array.append([sites])
@@ -410,24 +448,54 @@ def parse_and_upload(client_data, sle_data):
                 new_column = True
             # Print results
             if sites != "Sites":
-                print("Site: " + sites + " | Successful Connects: " + connects + "%")
+                print(
+                    "Site: "
+                    + sites
+                    + " | Successful Connects: "
+                    + connects[0]
+                    + "%"
+                    + " | AP Health: "
+                    + health[0]
+                    + "%"
+                    + " | Capacity: "
+                    + capacity[0]
+                    + "%"
+                )
 
         # Check if value is a string then erase it (for example if a site has 0 clients it will not show up in the list)
-        for list in columns_array:
+        for list in connect_array:
             for idx in range(len(list)):
                 if list[idx] == today or list[idx] == day:
                     continue
                 elif list[idx][0].isalpha():
                     list[idx] = " "
 
-        values.extend(columns_array)
+        # Check if value is a string then erase it (for example if a site has 0 clients it will not show up in the list)
+        for list in health_array:
+            for idx in range(len(list)):
+                if list[idx] == today or list[idx] == day:
+                    continue
+                elif list[idx][0].isalpha():
+                    list[idx] = " "
+
+        # Check if value is a string then erase it (for example if a site has 0 clients it will not show up in the list)
+        for list in capacity_array:
+            for idx in range(len(list)):
+                if list[idx] == today or list[idx] == day:
+                    continue
+                elif list[idx][0].isalpha():
+                    list[idx] = " "
+
+        connect_values.extend(connect_array)
+        health_values.extend(health_array)
+        capacity_values.extend(capacity_array)
 
         print("\nUpdating Google sheet ...\n")
 
         # Sheets API call inputs
         worksheet_name = weekly_successful_connects_sheet + "!"
         cell_range_insert = "A1"
-        value_range_body = {"majorDimension": "COLUMNS", "values": values}
+        value_range_body = {"majorDimension": "COLUMNS", "values": connect_values}
         value_range_body1 = {"majorDimension": "COLUMNS", "values": title_array}
 
         # Update the column titles via API call
@@ -436,6 +504,32 @@ def parse_and_upload(client_data, sle_data):
         # Update the values on spreadsheet via API call
         append_sheet(worksheet_name, cell_range_insert, value_range_body)
 
+        # Sheets API call inputs
+        worksheet_name = ap_health_sheet + "!"
+        cell_range_insert = "A1"
+        value_range_body = {"majorDimension": "COLUMNS", "values": health_values}
+        value_range_body1 = {"majorDimension": "COLUMNS", "values": title_array}
+
+        # Update the column titles via API call
+        if new_column == True:
+            update_sheet(worksheet_name, cell_range_insert, value_range_body1)
+        # Update the values on spreadsheet via API call
+        append_sheet(worksheet_name, cell_range_insert, value_range_body)
+
+        # Sheets API call inputs
+        worksheet_name = capacity_sheet + "!"
+        cell_range_insert = "A1"
+        value_range_body = {"majorDimension": "COLUMNS", "values": capacity_values}
+        value_range_body1 = {"majorDimension": "COLUMNS", "values": title_array}
+
+        # Update the column titles via API call
+        if new_column == True:
+            update_sheet(worksheet_name, cell_range_insert, value_range_body1)
+        # Update the values on spreadsheet via API call
+        append_sheet(worksheet_name, cell_range_insert, value_range_body)
+
+
+# def sle_parse()
 
 # --------------------------------------------------------------------------
 # Function:     update_sheet(worksheet, range, values)
